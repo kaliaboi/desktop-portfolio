@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useCallback } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -16,12 +16,51 @@ const DesktopContext = createContext(null);
 // INITIAL STATE
 // ============================================================================
 
+// Calculate centered position for a window with 16:9 aspect ratio
+const getCenteredPosition = () => {
+  const windowWidth = 640; // 16:9 ratio
+  const windowHeight = 360;
+  return {
+    x: Math.max(20, (window.innerWidth - windowWidth) / 2),
+    y: Math.max(60, (window.innerHeight - windowHeight) / 2),
+  };
+};
+
+const centeredPos = getCenteredPosition();
+
 const initialState = {
   topZ: 100,
   windows: {
-    about: { id: 'about', isOpen: false, x: 60, y: 40, z: 100 },
-    projects: { id: 'projects', isOpen: false, x: 120, y: 100, z: 99 },
-    contact: { id: 'contact', isOpen: false, x: 180, y: 160, z: 98 },
+    about: {
+      id: 'about',
+      isOpen: false,
+      x: centeredPos.x,
+      y: centeredPos.y,
+      z: 100,
+      width: 640,
+      height: 360,
+      isMaximized: false
+    },
+    projects: {
+      id: 'projects',
+      isOpen: false,
+      x: 120,
+      y: 100,
+      z: 99,
+      width: 640,
+      height: 360,
+      isMaximized: false
+    },
+    contact: {
+      id: 'contact',
+      isOpen: false,
+      x: 180,
+      y: 160,
+      z: 98,
+      width: 640,
+      height: 360,
+      isMaximized: false
+    },
   },
   icons: {
     about: { id: 'about', x: 20, y: 60 },
@@ -158,6 +197,61 @@ function desktopReducer(state, action) {
       };
     }
 
+    case 'RESIZE_WINDOW': {
+      const { id, width, height } = action.payload;
+      return {
+        ...state,
+        windows: {
+          ...state.windows,
+          [id]: { ...state.windows[id], width, height },
+        },
+      };
+    }
+
+    case 'TOGGLE_MAXIMIZE': {
+      const { id, viewportWidth, viewportHeight } = action.payload;
+      const win = state.windows[id];
+      if (win.isMaximized) {
+        // Restore to previous size
+        return {
+          ...state,
+          windows: {
+            ...state.windows,
+            [id]: {
+              ...win,
+              isMaximized: false,
+              x: win.prevX,
+              y: win.prevY,
+              width: win.prevWidth,
+              height: win.prevHeight,
+            },
+          },
+        };
+      } else {
+        // Maximize (with some padding)
+        const padding = 20;
+        const taskbarHeight = 40;
+        return {
+          ...state,
+          windows: {
+            ...state.windows,
+            [id]: {
+              ...win,
+              isMaximized: true,
+              prevX: win.x,
+              prevY: win.y,
+              prevWidth: win.width,
+              prevHeight: win.height,
+              x: padding,
+              y: padding + taskbarHeight,
+              width: viewportWidth - padding * 2,
+              height: viewportHeight - padding * 2 - taskbarHeight,
+            },
+          },
+        };
+      }
+    }
+
     default:
       return state;
   }
@@ -169,6 +263,15 @@ function desktopReducer(state, action) {
 
 export function DesktopProvider({ children }) {
   const [state, dispatch] = useReducer(desktopReducer, initialState);
+
+  // Open About window after a slight delay on initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      dispatch({ type: 'OPEN_WINDOW', payload: { id: 'about' } });
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const focusWindow = useCallback((id) => {
     dispatch({ type: 'FOCUS_WINDOW', payload: { id } });
@@ -210,6 +313,21 @@ export function DesktopProvider({ children }) {
     dispatch({ type: 'REORGANIZE_ICONS' });
   }, []);
 
+  const resizeWindow = useCallback((id, width, height) => {
+    dispatch({ type: 'RESIZE_WINDOW', payload: { id, width, height } });
+  }, []);
+
+  const toggleMaximize = useCallback((id) => {
+    dispatch({
+      type: 'TOGGLE_MAXIMIZE',
+      payload: {
+        id,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+      },
+    });
+  }, []);
+
   return (
     <DesktopContext.Provider
       value={{
@@ -224,6 +342,8 @@ export function DesktopProvider({ children }) {
         showContextMenu,
         hideContextMenu,
         reorganizeIcons,
+        resizeWindow,
+        toggleMaximize,
       }}
     >
       {children}
