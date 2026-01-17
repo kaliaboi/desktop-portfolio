@@ -2,15 +2,28 @@ import { useRef } from 'react';
 import { motion, useDragControls } from 'framer-motion';
 import { useDesktop } from '../context/DesktopContext';
 import { useIsMobile } from '../hooks';
-import { User, Briefcase, Mail } from 'lucide-react';
+import { User, Briefcase, Mail, LucideIcon } from 'lucide-react';
+import { WindowId } from '../context/DesktopContext';
 
-export const ICON_DATA = [
+interface IconData {
+  id: WindowId;
+  title: string;
+  icon: LucideIcon;
+}
+
+export const ICON_DATA: IconData[] = [
   { id: 'about', title: 'About', icon: User },
   { id: 'projects', title: 'Projects', icon: Briefcase },
   { id: 'contact', title: 'Contact', icon: Mail },
 ];
 
-export function DesktopIcon({ id, title, icon: Icon }) {
+interface DesktopIconProps {
+  id: WindowId;
+  title: string;
+  icon: LucideIcon;
+}
+
+export function DesktopIcon({ id, title, icon: Icon }: DesktopIconProps) {
   const { state, openWindow, selectIcon, deselectIcon, updateIconPosition } = useDesktop();
   const isSelected = state.selectedIconId === id;
   const isMobile = useIsMobile();
@@ -18,7 +31,7 @@ export function DesktopIcon({ id, title, icon: Icon }) {
   const dragControls = useDragControls();
   const iconState = state.icons[id];
 
-  const handleClick = (e) => {
+  const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
 
     if (isMobile) {
@@ -42,7 +55,7 @@ export function DesktopIcon({ id, title, icon: Icon }) {
     }
   };
 
-  const handleDragEnd = (event, info) => {
+  const handleDragEnd = (event: any, info: any) => {
     updateIconPosition(id, iconState.x + info.offset.x, iconState.y + info.offset.y);
   };
 

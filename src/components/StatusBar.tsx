@@ -6,7 +6,7 @@ import { ThemeToggle } from "./ThemeToggle";
 
 export function StatusBar() {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [location, setLocation] = useState(null);
+  const [location, setLocation] = useState<string | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const isMobile = useIsMobile();
 
@@ -54,7 +54,7 @@ export function StatusBar() {
     );
   }, []);
 
-  const formatTime = (date) => {
+  const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -62,7 +62,7 @@ export function StatusBar() {
     });
   };
 
-  const formatDate = (date) => {
+  const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",

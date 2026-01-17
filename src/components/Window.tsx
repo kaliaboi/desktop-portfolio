@@ -1,29 +1,45 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, ReactNode } from "react";
 import { motion, useDragControls } from "framer-motion";
 import { useDesktop } from "../context/DesktopContext";
 import { useIsMobile, usePrefersReducedMotion } from "../hooks";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import { User, Briefcase, Mail, Maximize2, Minimize2 } from "lucide-react";
+import { WindowId } from "../context/DesktopContext";
 
 const WINDOW_ICONS = {
   about: User,
   projects: Briefcase,
   contact: Mail,
-};
+} as const;
 
-export function Window({ id, title, children }) {
+interface WindowProps {
+  id: WindowId;
+  title: string;
+  children: ReactNode;
+}
+
+type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
+
+export function Window({ id, title, children }: WindowProps) {
   const { state, focusWindow, closeWindow, updatePosition, resizeWindow, toggleMaximize } = useDesktop();
   const windowState = state.windows[id];
   const isActive = state.activeWindowId === id;
-  const windowRef = useRef(null);
+  const windowRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
   const prefersReducedMotion = usePrefersReducedMotion();
   const isMobile = useIsMobile();
   const Icon = WINDOW_ICONS[id];
   const [isResizing, setIsResizing] = useState(false);
-  const [resizeDirection, setResizeDirection] = useState(null);
-  const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+  const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
+  const resizeStartRef = useRef({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    windowX: 0,
+    windowY: 0,
+  });
 
   // Focus trap for active window
   useEffect(() => {
@@ -32,7 +48,7 @@ export function Window({ id, title, children }) {
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       if (focusableElements.length > 0) {
-        focusableElements[0].focus();
+        (focusableElements[0] as HTMLElement).focus();
       }
     }
   }, [isActive]);
@@ -41,7 +57,7 @@ export function Window({ id, title, children }) {
   useEffect(() => {
     if (!isActive) return;
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         closeWindow(id);
       }
@@ -59,7 +75,7 @@ export function Window({ id, title, children }) {
     focusWindow(id);
   };
 
-  const handleDragEnd = (event, info) => {
+  const handleDragEnd = (event: any, info: any) => {
     updatePosition(
       id,
       windowState.x + info.offset.x,
@@ -68,7 +84,7 @@ export function Window({ id, title, children }) {
   };
 
   // Resize handlers
-  const handleResizeStart = (e, direction) => {
+  const handleResizeStart = (e: React.MouseEvent, direction: ResizeDirection) => {
     e.stopPropagation();
     setIsResizing(true);
     setResizeDirection(direction);
@@ -86,7 +102,7 @@ export function Window({ id, title, children }) {
   useEffect(() => {
     if (!isResizing) return;
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - resizeStartRef.current.x;
       const deltaY = e.clientY - resizeStartRef.current.y;
 
@@ -96,10 +112,10 @@ export function Window({ id, title, children }) {
       let newY = resizeStartRef.current.windowY;
 
       // Handle horizontal resizing
-      if (resizeDirection.includes('e')) {
+      if (resizeDirection?.includes('e')) {
         // Resize from right edge
         newWidth = Math.max(320, resizeStartRef.current.width + deltaX);
-      } else if (resizeDirection.includes('w')) {
+      } else if (resizeDirection?.includes('w')) {
         // Resize from left edge
         const potentialWidth = resizeStartRef.current.width - deltaX;
         if (potentialWidth >= 320) {
@@ -112,10 +128,10 @@ export function Window({ id, title, children }) {
       }
 
       // Handle vertical resizing
-      if (resizeDirection.includes('s')) {
+      if (resizeDirection?.includes('s')) {
         // Resize from bottom edge
         newHeight = Math.max(200, resizeStartRef.current.height + deltaY);
-      } else if (resizeDirection.includes('n')) {
+      } else if (resizeDirection?.includes('n')) {
         // Resize from top edge
         const potentialHeight = resizeStartRef.current.height - deltaY;
         if (potentialHeight >= 200) {

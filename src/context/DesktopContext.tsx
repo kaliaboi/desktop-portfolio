@@ -1,16 +1,82 @@
-import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect, ReactNode, Dispatch } from 'react';
 
 // ============================================================================
 // TYPES & CONSTANTS
 // ============================================================================
 
-export const WINDOW_IDS = ['about', 'projects', 'contact'];
+export const WINDOW_IDS = ['about', 'projects', 'contact'] as const;
+export type WindowId = typeof WINDOW_IDS[number];
+
+export interface WindowState {
+  id: WindowId;
+  isOpen: boolean;
+  x: number;
+  y: number;
+  z: number;
+  width: number;
+  height: number;
+  isMaximized: boolean;
+  prevX?: number;
+  prevY?: number;
+  prevWidth?: number;
+  prevHeight?: number;
+}
+
+export interface IconState {
+  id: WindowId;
+  x: number;
+  y: number;
+}
+
+export interface ContextMenuState {
+  x: number;
+  y: number;
+}
+
+export interface DesktopState {
+  topZ: number;
+  windows: Record<WindowId, WindowState>;
+  icons: Record<WindowId, IconState>;
+  activeWindowId: WindowId | null;
+  selectedIconId: WindowId | null;
+  contextMenu: ContextMenuState | null;
+}
+
+type DesktopAction =
+  | { type: 'FOCUS_WINDOW'; payload: { id: WindowId } }
+  | { type: 'OPEN_WINDOW'; payload: { id: WindowId } }
+  | { type: 'CLOSE_WINDOW'; payload: { id: WindowId } }
+  | { type: 'UPDATE_POSITION'; payload: { id: WindowId; x: number; y: number } }
+  | { type: 'SELECT_ICON'; payload: { id: WindowId } }
+  | { type: 'DESELECT_ICON' }
+  | { type: 'UPDATE_ICON_POSITION'; payload: { id: WindowId; x: number; y: number } }
+  | { type: 'SHOW_CONTEXT_MENU'; payload: { x: number; y: number } }
+  | { type: 'HIDE_CONTEXT_MENU' }
+  | { type: 'REORGANIZE_ICONS' }
+  | { type: 'RESIZE_WINDOW'; payload: { id: WindowId; width: number; height: number } }
+  | { type: 'TOGGLE_MAXIMIZE'; payload: { id: WindowId; viewportWidth: number; viewportHeight: number } };
+
+interface DesktopContextType {
+  state: DesktopState;
+  focusWindow: (id: WindowId) => void;
+  openWindow: (id: WindowId) => void;
+  closeWindow: (id: WindowId) => void;
+  updatePosition: (id: WindowId, x: number, y: number) => void;
+  selectIcon: (id: WindowId) => void;
+  deselectIcon: () => void;
+  updateIconPosition: (id: WindowId, x: number, y: number) => void;
+  showContextMenu: (x: number, y: number) => void;
+  hideContextMenu: () => void;
+  reorganizeIcons: () => void;
+  resizeWindow: (id: WindowId, width: number, height: number) => void;
+  toggleMaximize: (id: WindowId) => void;
+}
 
 // ============================================================================
 // CONTEXT
 // ============================================================================
 
-const DesktopContext = createContext(null);
+const DesktopContext = createContext<DesktopContextType | null>(null);
 
 // ============================================================================
 // INITIAL STATE
@@ -28,7 +94,7 @@ const getCenteredPosition = () => {
 
 const centeredPos = getCenteredPosition();
 
-const initialState = {
+const initialState: DesktopState = {
   topZ: 100,
   windows: {
     about: {
@@ -76,7 +142,7 @@ const initialState = {
 // REDUCER
 // ============================================================================
 
-function desktopReducer(state, action) {
+function desktopReducer(state: DesktopState, action: DesktopAction): DesktopState {
   switch (action.type) {
     case 'FOCUS_WINDOW': {
       const { id } = action.payload;
@@ -181,8 +247,8 @@ function desktopReducer(state, action) {
     }
 
     case 'REORGANIZE_ICONS': {
-      const iconIds = Object.keys(state.icons);
-      const newIcons = {};
+      const iconIds = Object.keys(state.icons) as WindowId[];
+      const newIcons = {} as Record<WindowId, IconState>;
       iconIds.forEach((id, index) => {
         newIcons[id] = {
           ...state.icons[id],
@@ -220,10 +286,10 @@ function desktopReducer(state, action) {
             [id]: {
               ...win,
               isMaximized: false,
-              x: win.prevX,
-              y: win.prevY,
-              width: win.prevWidth,
-              height: win.prevHeight,
+              x: win.prevX!,
+              y: win.prevY!,
+              width: win.prevWidth!,
+              height: win.prevHeight!,
             },
           },
         };
@@ -261,7 +327,11 @@ function desktopReducer(state, action) {
 // PROVIDER
 // ============================================================================
 
-export function DesktopProvider({ children }) {
+interface DesktopProviderProps {
+  children: ReactNode;
+}
+
+export function DesktopProvider({ children }: DesktopProviderProps) {
   const [state, dispatch] = useReducer(desktopReducer, initialState);
 
   // Open About window after a slight delay on initial load
@@ -273,23 +343,23 @@ export function DesktopProvider({ children }) {
     return () => clearTimeout(timer);
   }, []);
 
-  const focusWindow = useCallback((id) => {
+  const focusWindow = useCallback((id: WindowId) => {
     dispatch({ type: 'FOCUS_WINDOW', payload: { id } });
   }, []);
 
-  const openWindow = useCallback((id) => {
+  const openWindow = useCallback((id: WindowId) => {
     dispatch({ type: 'OPEN_WINDOW', payload: { id } });
   }, []);
 
-  const closeWindow = useCallback((id) => {
+  const closeWindow = useCallback((id: WindowId) => {
     dispatch({ type: 'CLOSE_WINDOW', payload: { id } });
   }, []);
 
-  const updatePosition = useCallback((id, x, y) => {
+  const updatePosition = useCallback((id: WindowId, x: number, y: number) => {
     dispatch({ type: 'UPDATE_POSITION', payload: { id, x, y } });
   }, []);
 
-  const selectIcon = useCallback((id) => {
+  const selectIcon = useCallback((id: WindowId) => {
     dispatch({ type: 'SELECT_ICON', payload: { id } });
   }, []);
 
@@ -297,11 +367,11 @@ export function DesktopProvider({ children }) {
     dispatch({ type: 'DESELECT_ICON' });
   }, []);
 
-  const updateIconPosition = useCallback((id, x, y) => {
+  const updateIconPosition = useCallback((id: WindowId, x: number, y: number) => {
     dispatch({ type: 'UPDATE_ICON_POSITION', payload: { id, x, y } });
   }, []);
 
-  const showContextMenu = useCallback((x, y) => {
+  const showContextMenu = useCallback((x: number, y: number) => {
     dispatch({ type: 'SHOW_CONTEXT_MENU', payload: { x, y } });
   }, []);
 
@@ -313,11 +383,11 @@ export function DesktopProvider({ children }) {
     dispatch({ type: 'REORGANIZE_ICONS' });
   }, []);
 
-  const resizeWindow = useCallback((id, width, height) => {
+  const resizeWindow = useCallback((id: WindowId, width: number, height: number) => {
     dispatch({ type: 'RESIZE_WINDOW', payload: { id, width, height } });
   }, []);
 
-  const toggleMaximize = useCallback((id) => {
+  const toggleMaximize = useCallback((id: WindowId) => {
     dispatch({
       type: 'TOGGLE_MAXIMIZE',
       payload: {
@@ -355,7 +425,7 @@ export function DesktopProvider({ children }) {
 // HOOK
 // ============================================================================
 
-export function useDesktop() {
+export function useDesktop(): DesktopContextType {
   const context = useContext(DesktopContext);
   if (!context) throw new Error('useDesktop must be used within DesktopProvider');
   return context;

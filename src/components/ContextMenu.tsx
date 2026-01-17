@@ -1,19 +1,37 @@
 import { useRef, useEffect } from "react";
 import { useDesktop } from "../context/DesktopContext";
-import { RefreshCw, RotateCcw, Eye, Info } from "lucide-react";
+import { RefreshCw, RotateCcw, Eye, Info, LucideIcon } from "lucide-react";
+
+interface MenuItem {
+  label: string;
+  icon: LucideIcon;
+  action?: () => void;
+  submenu?: boolean;
+  separator?: never;
+}
+
+interface MenuSeparator {
+  separator: true;
+  label?: never;
+  icon?: never;
+  action?: never;
+  submenu?: never;
+}
+
+type MenuItemType = MenuItem | MenuSeparator;
 
 export function ContextMenu() {
   const { state, hideContextMenu, reorganizeIcons } = useDesktop();
-  const menuRef = useRef(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         hideContextMenu();
       }
     };
 
-    const handleEscape = (e) => {
+    const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         hideContextMenu();
       }
@@ -34,7 +52,7 @@ export function ContextMenu() {
 
   if (!state.contextMenu) return null;
 
-  const menuItems = [
+  const menuItems: MenuItemType[] = [
     {
       label: "Reorganize Icons",
       icon: RefreshCw,

@@ -13,7 +13,7 @@ export function DesktopIcons() {
     }
   };
 
-  const handleContextMenu = (e) => {
+  const handleContextMenu = (e: React.MouseEvent) => {
     if (!isMobile) {
       e.preventDefault();
       e.stopPropagation();

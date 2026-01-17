@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export function useIsMobile() {
+export function useIsMobile(): boolean {
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
   );
@@ -14,7 +14,7 @@ export function useIsMobile() {
   return isMobile;
 }
 
-export function usePrefersReducedMotion() {
+export function usePrefersReducedMotion(): boolean {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(
     typeof window !== 'undefined'
       ? window.matchMedia('(prefers-reduced-motion: reduce)').matches

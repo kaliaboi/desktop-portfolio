@@ -28,8 +28,14 @@ export function AboutContent() {
   );
 }
 
+interface Project {
+  name: string;
+  description: string;
+  tech: string[];
+}
+
 export function ProjectsContent() {
-  const projects = [
+  const projects: Project[] = [
     {
       name: 'Forma',
       description: 'A design system compiler that outputs production-ready components.',

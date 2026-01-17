@@ -1,11 +1,22 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-const ThemeContext = createContext(null);
+type Theme = 'light' | 'dark' | 'system';
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
+interface ThemeContextType {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | null>(null);
+
+interface ThemeProviderProps {
+  children: ReactNode;
+}
+
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  const [theme, setTheme] = useState<Theme>(() => {
     // Check localStorage first, fallback to 'system'
-    const stored = localStorage.getItem('theme');
+    const stored = localStorage.getItem('theme') as Theme | null;
     return stored || 'system';
   });
 
@@ -47,7 +58,7 @@ export function ThemeProvider({ children }) {
   );
 }
 
-export function useTheme() {
+export function useTheme(): ThemeContextType {
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error('useTheme must be used within ThemeProvider');
