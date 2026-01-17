@@ -1,6 +1,7 @@
 import { useRef, useEffect } from "react";
 import { useDesktop } from "../context/DesktopContext";
 import { RefreshCw, RotateCcw, Eye, Info, LucideIcon } from "lucide-react";
+import { playTapSound } from "../lib/sounds";
 
 interface MenuItem {
   label: string;
@@ -99,6 +100,7 @@ export function ContextMenu() {
           <button
             key={item.label}
             onClick={() => {
+              playTapSound();
               if (item.action) {
                 item.action();
               }

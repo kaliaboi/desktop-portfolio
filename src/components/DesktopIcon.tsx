@@ -4,6 +4,7 @@ import { useDesktop } from '../context/DesktopContext';
 import { useIsMobile } from '../hooks';
 import { User, Briefcase, Mail, LucideIcon } from 'lucide-react';
 import { WindowId } from '../context/DesktopContext';
+import { playTapSound, playSelectSound } from '../lib/sounds';
 
 interface IconData {
   id: WindowId;
@@ -36,6 +37,7 @@ export function DesktopIcon({ id, title, icon: Icon }: DesktopIconProps) {
 
     if (isMobile) {
       // Mobile: single tap to open
+      playTapSound();
       openWindow(id);
     } else {
       // Desktop: single click to select, double click to open
@@ -44,10 +46,12 @@ export function DesktopIcon({ id, title, icon: Icon }: DesktopIconProps) {
 
       if (timeSinceLastClick < 300) {
         // Double click - open window
+        playTapSound();
         openWindow(id);
         deselectIcon();
       } else {
         // Single click - select icon
+        playSelectSound();
         selectIcon(id);
       }
 

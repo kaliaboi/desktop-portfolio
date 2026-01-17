@@ -1,6 +1,7 @@
 import { useTheme } from "../context/ThemeContext";
 import { Button } from "./ui/button";
 import { Sun, Moon, Monitor } from "lucide-react";
+import { playTapSound } from "../lib/sounds";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -11,7 +12,10 @@ export function ThemeToggle() {
         variant={theme === "light" ? "secondary" : "ghost"}
         size="icon"
         className="h-6 w-6"
-        onClick={() => setTheme("light")}
+        onClick={() => {
+          playTapSound();
+          setTheme("light");
+        }}
         aria-label="Light theme"
       >
         <Sun className="h-3 w-3" />
@@ -20,7 +24,10 @@ export function ThemeToggle() {
         variant={theme === "dark" ? "secondary" : "ghost"}
         size="icon"
         className="h-6 w-6"
-        onClick={() => setTheme("dark")}
+        onClick={() => {
+          playTapSound();
+          setTheme("dark");
+        }}
         aria-label="Dark theme"
       >
         <Moon className="h-3 w-3" />
@@ -29,7 +36,10 @@ export function ThemeToggle() {
         variant={theme === "system" ? "secondary" : "ghost"}
         size="icon"
         className="h-6 w-6"
-        onClick={() => setTheme("system")}
+        onClick={() => {
+          playTapSound();
+          setTheme("system");
+        }}
         aria-label="System theme"
       >
         <Monitor className="h-3 w-3" />

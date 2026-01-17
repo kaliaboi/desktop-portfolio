@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Mail, Github, Twitter } from 'lucide-react';
+import { playTapSound } from '../lib/sounds';
 
 export function AboutContent() {
   return (
@@ -88,7 +89,7 @@ export function ContactContent() {
           className="w-full justify-start gap-3"
           asChild
         >
-          <a href="mailto:hello@alexchen.dev">
+          <a href="mailto:hello@alexchen.dev" onClick={playTapSound}>
             <Mail className="w-4 h-4 text-muted-foreground" />
             hello@alexchen.dev
           </a>
@@ -102,6 +103,7 @@ export function ContactContent() {
             href="https://github.com/alexchen"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={playTapSound}
           >
             <Github className="w-4 h-4 text-muted-foreground" />
             github.com/alexchen
@@ -116,6 +118,7 @@ export function ContactContent() {
             href="https://twitter.com/alexchen"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={playTapSound}
           >
             <Twitter className="w-4 h-4 text-muted-foreground" />
             @alexchen

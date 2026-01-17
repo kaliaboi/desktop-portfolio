@@ -3,6 +3,7 @@ import { useIsMobile } from "../hooks";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ThemeToggle } from "./ThemeToggle";
+import { playTapSound } from "../lib/sounds";
 
 export function StatusBar() {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -98,13 +99,13 @@ export function StatusBar() {
           Portfolio OS
         </Badge>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-7 px-3 text-xs">
+          <Button variant="ghost" size="sm" className="h-7 px-3 text-xs" onClick={playTapSound}>
             File
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-3 text-xs">
+          <Button variant="ghost" size="sm" className="h-7 px-3 text-xs" onClick={playTapSound}>
             Edit
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-3 text-xs">
+          <Button variant="ghost" size="sm" className="h-7 px-3 text-xs" onClick={playTapSound}>
             View
           </Button>
         </div>

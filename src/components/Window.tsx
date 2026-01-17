@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import { User, Briefcase, Mail, Maximize2, Minimize2 } from "lucide-react";
 import { WindowId } from "../context/DesktopContext";
+import { playTapSound } from "../lib/sounds";
 
 const WINDOW_ICONS = {
   about: User,
@@ -166,9 +167,24 @@ export function Window({ id, title, children }: WindowProps) {
   const animationVariants = prefersReducedMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
     : {
-        initial: { opacity: 0, scale: 0.96 },
-        animate: { opacity: 1, scale: 1 },
-        exit: { opacity: 0, scale: 0.96 },
+        initial: {
+          opacity: 0,
+          scale: 0.3,
+          y: 100,
+          filter: "blur(10px)",
+        },
+        animate: {
+          opacity: 1,
+          scale: 1,
+          y: 0,
+          filter: "blur(0px)",
+        },
+        exit: {
+          opacity: 0,
+          scale: 0.3,
+          y: 100,
+          filter: "blur(10px)",
+        },
       };
 
   // Mobile: full-screen panels
@@ -190,7 +206,7 @@ export function Window({ id, title, children }: WindowProps) {
         initial={animationVariants.initial}
         animate={animationVariants.animate}
         exit={animationVariants.exit}
-        transition={{ duration: 0.2, ease: "easeOut" }}
+        transition={{ duration: 0.25, ease: [0.32, 0, 0.67, 0] }}
       >
         <div className="flex items-center justify-between px-4 h-10 bg-muted border-b border-b-foreground/30">
           <div className="flex items-center gap-2">
@@ -200,7 +216,10 @@ export function Window({ id, title, children }: WindowProps) {
             </span>
           </div>
           <button
-            onClick={() => closeWindow(id)}
+            onClick={() => {
+              playTapSound();
+              closeWindow(id);
+            }}
             className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-muted-foreground/10 transition-colors text-foreground"
             aria-label={`Close ${title}`}
           >
@@ -250,14 +269,15 @@ export function Window({ id, title, children }: WindowProps) {
         y: windowState.y,
         opacity: 1,
         scale: 1,
+        filter: "blur(0px)",
       }}
       exit={animationVariants.exit}
       transition={{
         x: { duration: 0 },
-        y: { duration: 0 },
-        opacity: { duration: 0.15 },
-        scale: { duration: 0.15 },
-        ease: "easeOut",
+        opacity: { duration: 0.25, ease: [0.32, 0, 0.67, 0] },
+        scale: { duration: 0.25, ease: [0.32, 0, 0.67, 0] },
+        y: { duration: 0.25, ease: [0.32, 0, 0.67, 0] },
+        filter: { duration: 0.25, ease: [0.32, 0, 0.67, 0] },
       }}
     >
       {/* Title bar - drag handle */}
@@ -278,6 +298,7 @@ export function Window({ id, title, children }: WindowProps) {
             className="h-6 w-6"
             onClick={(e) => {
               e.stopPropagation();
+              playTapSound();
               toggleMaximize(id);
             }}
             aria-label={windowState.isMaximized ? "Restore" : "Maximize"}
@@ -294,6 +315,7 @@ export function Window({ id, title, children }: WindowProps) {
             className="h-6 w-6"
             onClick={(e) => {
               e.stopPropagation();
+              playTapSound();
               closeWindow(id);
             }}
             aria-label={`Close ${title}`}

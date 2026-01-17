@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useCallback, useEffect, ReactNode, Dispatch } from 'react';
+import { playWindowOpenSound, playWindowCloseSound, resumeAudioContext } from '../lib/sounds';
 
 // ============================================================================
 // TYPES & CONSTANTS
@@ -334,10 +335,28 @@ interface DesktopProviderProps {
 export function DesktopProvider({ children }: DesktopProviderProps) {
   const [state, dispatch] = useReducer(desktopReducer, initialState);
 
+  // Resume audio context on user interaction
+  useEffect(() => {
+    const handleInteraction = () => {
+      resumeAudioContext();
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('keydown', handleInteraction);
+    };
+
+    document.addEventListener('click', handleInteraction);
+    document.addEventListener('keydown', handleInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('keydown', handleInteraction);
+    };
+  }, []);
+
   // Open About window after a slight delay on initial load
   useEffect(() => {
     const timer = setTimeout(() => {
       dispatch({ type: 'OPEN_WINDOW', payload: { id: 'about' } });
+      playWindowOpenSound();
     }, 500); // 500ms delay
 
     return () => clearTimeout(timer);
@@ -349,10 +368,12 @@ export function DesktopProvider({ children }: DesktopProviderProps) {
 
   const openWindow = useCallback((id: WindowId) => {
     dispatch({ type: 'OPEN_WINDOW', payload: { id } });
+    playWindowOpenSound();
   }, []);
 
   const closeWindow = useCallback((id: WindowId) => {
     dispatch({ type: 'CLOSE_WINDOW', payload: { id } });
+    playWindowCloseSound();
   }, []);
 
   const updatePosition = useCallback((id: WindowId, x: number, y: number) => {
