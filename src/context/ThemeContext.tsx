@@ -18,6 +18,7 @@ interface ThemeProviderProps {
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
     // Check localStorage first, fallback to 'system'
+    if (typeof window === 'undefined') return 'system';
     const stored = localStorage.getItem('theme') as Theme | null;
     return stored || 'system';
   });
