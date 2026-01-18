@@ -1,10 +1,14 @@
+'use client'
+
 import { useRef } from 'react';
 import { motion, useDragControls } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { useDesktop } from '../context/DesktopContext';
 import { useIsMobile } from '../hooks';
-import { User, Briefcase, Mail, LucideIcon } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 import { WindowId } from '../context/DesktopContext';
 import { playTapSound, playSelectSound } from '../lib/sounds';
+import { FILE_SYSTEM } from '../types/filesystem';
 
 interface IconData {
   id: WindowId;
@@ -12,11 +16,11 @@ interface IconData {
   icon: LucideIcon;
 }
 
-export const ICON_DATA: IconData[] = [
-  { id: 'about', title: 'About', icon: User },
-  { id: 'projects', title: 'Projects', icon: Briefcase },
-  { id: 'contact', title: 'Contact', icon: Mail },
-];
+export const ICON_DATA: IconData[] = FILE_SYSTEM.map(item => ({
+  id: item.id as WindowId,
+  title: item.name,
+  icon: item.icon,
+}));
 
 interface DesktopIconProps {
   id: WindowId;
@@ -25,7 +29,8 @@ interface DesktopIconProps {
 }
 
 export function DesktopIcon({ id, title, icon: Icon }: DesktopIconProps) {
-  const { state, openWindow, selectIcon, deselectIcon, updateIconPosition } = useDesktop();
+  const { state, selectIcon, deselectIcon, updateIconPosition } = useDesktop();
+  const router = useRouter();
   const isSelected = state.selectedIconId === id;
   const isMobile = useIsMobile();
   const lastClickTime = useRef(0);
@@ -36,18 +41,18 @@ export function DesktopIcon({ id, title, icon: Icon }: DesktopIconProps) {
     e.stopPropagation();
 
     if (isMobile) {
-      // Mobile: single tap to open
+      // Mobile: single tap to navigate
       playTapSound();
-      openWindow(id);
+      router.push(`/${id}`);
     } else {
-      // Desktop: single click to select, double click to open
+      // Desktop: single click to select, double click to navigate
       const now = Date.now();
       const timeSinceLastClick = now - lastClickTime.current;
 
       if (timeSinceLastClick < 300) {
-        // Double click - open window
+        // Double click - navigate to route
         playTapSound();
-        openWindow(id);
+        router.push(`/${id}`);
         deselectIcon();
       } else {
         // Single click - select icon
@@ -59,7 +64,7 @@ export function DesktopIcon({ id, title, icon: Icon }: DesktopIconProps) {
     }
   };
 
-  const handleDragEnd = (event: any, info: any) => {
+  const handleDragEnd = (_event: any, info: any) => {
     updateIconPosition(id, iconState.x + info.offset.x, iconState.y + info.offset.y);
   };
 
@@ -89,6 +94,10 @@ export function DesktopIcon({ id, title, icon: Icon }: DesktopIconProps) {
       dragMomentum={false}
       dragElastic={0}
       onDragEnd={handleDragEnd}
+      initial={{
+        x: iconState.x,
+        y: iconState.y,
+      }}
       animate={{
         x: iconState.x,
         y: iconState.y,

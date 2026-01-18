@@ -1,3 +1,5 @@
+'use client'
+
 import { useDesktop } from '../context/DesktopContext';
 import { useIsMobile } from '../hooks';
 import { DesktopIcon, ICON_DATA } from './DesktopIcon';

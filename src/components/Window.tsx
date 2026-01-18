@@ -1,3 +1,5 @@
+'use client'
+
 import { useRef, useEffect, useState, ReactNode } from "react";
 import { motion, useDragControls } from "framer-motion";
 import { useDesktop } from "../context/DesktopContext";
@@ -15,22 +17,36 @@ const WINDOW_ICONS = {
 } as const;
 
 interface WindowProps {
-  id: WindowId;
+  id: WindowId | string;
   title: string;
   children: ReactNode;
+  onClose?: () => void;
 }
 
 type ResizeDirection = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
-export function Window({ id, title, children }: WindowProps) {
+export function Window({ id, title, children, onClose }: WindowProps) {
   const { state, focusWindow, closeWindow, updatePosition, resizeWindow, toggleMaximize } = useDesktop();
-  const windowState = state.windows[id];
+  const windowState = state.windows[id as WindowId];
   const isActive = state.activeWindowId === id;
+
+  // Default state for dynamically opened windows (files from folders)
+  const [dynamicState, setDynamicState] = useState({
+    x: 100,
+    y: 100,
+    width: 640,
+    height: 480,
+    isMaximized: false,
+    z: 10,
+  });
+
+  // Use windowState if available, otherwise use dynamicState
+  const effectiveState = windowState || dynamicState;
   const windowRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
   const prefersReducedMotion = usePrefersReducedMotion();
   const isMobile = useIsMobile();
-  const Icon = WINDOW_ICONS[id];
+  const Icon = WINDOW_ICONS[id as WindowId];
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
   const resizeStartRef = useRef({
@@ -42,17 +58,23 @@ export function Window({ id, title, children }: WindowProps) {
     windowY: 0,
   });
 
-  // Focus trap for active window
+  // Blur any focused element when window becomes active (prevents auto-focus on buttons)
   useEffect(() => {
     if (isActive && windowRef.current) {
-      const focusableElements = windowRef.current.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusableElements.length > 0) {
-        (focusableElements[0] as HTMLElement).focus();
+      // Remove focus from any button to prevent automatic focus ring
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
       }
     }
   }, [isActive]);
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (windowState) {
+      closeWindow(id as WindowId);
+    }
+  };
 
   // Escape key closes active window
   useEffect(() => {
@@ -60,7 +82,7 @@ export function Window({ id, title, children }: WindowProps) {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        closeWindow(id);
+        handleClose();
       }
     };
 
@@ -69,19 +91,26 @@ export function Window({ id, title, children }: WindowProps) {
   }, [isActive, closeWindow, id]);
 
   const handlePointerDown = () => {
-    focusWindow(id);
+    if (windowState) {
+      focusWindow(id as WindowId);
+    }
   };
 
   const handleDragStart = () => {
-    focusWindow(id);
+    if (windowState) {
+      focusWindow(id as WindowId);
+    }
   };
 
-  const handleDragEnd = (event: any, info: any) => {
-    updatePosition(
-      id,
-      windowState.x + info.offset.x,
-      windowState.y + info.offset.y
-    );
+  const handleDragEnd = (_event: any, info: any) => {
+    const newX = effectiveState.x + info.offset.x;
+    const newY = effectiveState.y + info.offset.y;
+
+    if (windowState) {
+      updatePosition(id as WindowId, newX, newY);
+    } else {
+      setDynamicState(prev => ({ ...prev, x: newX, y: newY }));
+    }
   };
 
   // Resize handlers
@@ -92,12 +121,14 @@ export function Window({ id, title, children }: WindowProps) {
     resizeStartRef.current = {
       x: e.clientX,
       y: e.clientY,
-      width: windowState.width,
-      height: windowState.height,
-      windowX: windowState.x,
-      windowY: windowState.y,
+      width: effectiveState.width,
+      height: effectiveState.height,
+      windowX: effectiveState.x,
+      windowY: effectiveState.y,
     };
-    focusWindow(id);
+    if (windowState) {
+      focusWindow(id as WindowId);
+    }
   };
 
   useEffect(() => {
@@ -144,9 +175,19 @@ export function Window({ id, title, children }: WindowProps) {
         }
       }
 
-      resizeWindow(id, newWidth, newHeight);
-      if (newX !== resizeStartRef.current.windowX || newY !== resizeStartRef.current.windowY) {
-        updatePosition(id, newX, newY);
+      if (windowState) {
+        resizeWindow(id as WindowId, newWidth, newHeight);
+        if (newX !== resizeStartRef.current.windowX || newY !== resizeStartRef.current.windowY) {
+          updatePosition(id as WindowId, newX, newY);
+        }
+      } else {
+        setDynamicState(prev => ({
+          ...prev,
+          width: newWidth,
+          height: newHeight,
+          x: newX,
+          y: newY,
+        }));
       }
     };
 
@@ -201,7 +242,7 @@ export function Window({ id, title, children }: WindowProps) {
           flex flex-col
           ${isActive ? "z-50" : "z-40"}
         `}
-        style={{ zIndex: windowState.z }}
+        style={{ zIndex: effectiveState.z }}
         onPointerDown={handlePointerDown}
         initial={animationVariants.initial}
         animate={animationVariants.animate}
@@ -218,7 +259,7 @@ export function Window({ id, title, children }: WindowProps) {
           <button
             onClick={() => {
               playTapSound();
-              closeWindow(id);
+              handleClose();
             }}
             className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-muted-foreground/10 transition-colors text-foreground"
             aria-label={`Close ${title}`}
@@ -247,15 +288,15 @@ export function Window({ id, title, children }: WindowProps) {
       aria-label={title}
       className={cn(
         "fixed bg-card rounded-lg border shadow-lg flex flex-col",
-        isActive && "ring-2 ring-ring",
+        isActive && "ring-1 ring-ring/30",
         isResizing && "select-none"
       )}
       style={{
-        width: windowState.width,
-        height: windowState.height,
-        zIndex: windowState.z,
+        width: effectiveState.width,
+        height: effectiveState.height,
+        zIndex: effectiveState.z,
       }}
-      drag={!windowState.isMaximized && !isResizing}
+      drag={!effectiveState.isMaximized && !isResizing}
       dragControls={dragControls}
       dragListener={false}
       dragMomentum={false}
@@ -265,8 +306,8 @@ export function Window({ id, title, children }: WindowProps) {
       onPointerDown={handlePointerDown}
       initial={animationVariants.initial}
       animate={{
-        x: windowState.x,
-        y: windowState.y,
+        x: effectiveState.x,
+        y: effectiveState.y,
         opacity: 1,
         scale: 1,
         filter: "blur(0px)",
@@ -283,7 +324,7 @@ export function Window({ id, title, children }: WindowProps) {
       {/* Title bar - drag handle */}
       <div
         className="flex items-center justify-between px-4 h-10 border-b border-b-foreground/30 cursor-grab active:cursor-grabbing select-none bg-muted/50 rounded-t-lg"
-        onPointerDown={(e) => !windowState.isMaximized && dragControls.start(e)}
+        onPointerDown={(e) => !effectiveState.isMaximized && dragControls.start(e)}
       >
         <div className="flex items-center gap-2">
           {Icon && <Icon className="w-3.5 h-3.5 text-muted-foreground" />}
@@ -299,11 +340,15 @@ export function Window({ id, title, children }: WindowProps) {
             onClick={(e) => {
               e.stopPropagation();
               playTapSound();
-              toggleMaximize(id);
+              if (windowState) {
+                toggleMaximize(id as WindowId);
+              } else {
+                setDynamicState(prev => ({ ...prev, isMaximized: !prev.isMaximized }));
+              }
             }}
-            aria-label={windowState.isMaximized ? "Restore" : "Maximize"}
+            aria-label={effectiveState.isMaximized ? "Restore" : "Maximize"}
           >
-            {windowState.isMaximized ? (
+            {effectiveState.isMaximized ? (
               <Minimize2 className="w-3 h-3" />
             ) : (
               <Maximize2 className="w-3 h-3" />
@@ -316,7 +361,7 @@ export function Window({ id, title, children }: WindowProps) {
             onClick={(e) => {
               e.stopPropagation();
               playTapSound();
-              closeWindow(id);
+              handleClose();
             }}
             aria-label={`Close ${title}`}
           >
@@ -336,7 +381,7 @@ export function Window({ id, title, children }: WindowProps) {
       <div className="flex-1 overflow-y-auto p-5">{children}</div>
 
       {/* Resize handles - only show when not maximized */}
-      {!windowState.isMaximized && (
+      {!effectiveState.isMaximized && (
         <>
           {/* Corner handles */}
           <div

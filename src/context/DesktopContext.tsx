@@ -1,4 +1,6 @@
-import { createContext, useContext, useReducer, useCallback, useEffect, ReactNode, Dispatch } from 'react';
+'use client'
+
+import { createContext, useContext, useReducer, useCallback, useEffect, ReactNode } from 'react';
 import { playWindowOpenSound, playWindowCloseSound, resumeAudioContext } from '../lib/sounds';
 
 // ============================================================================
@@ -87,6 +89,9 @@ const DesktopContext = createContext<DesktopContextType | null>(null);
 const getCenteredPosition = () => {
   const windowWidth = 640; // 16:9 ratio
   const windowHeight = 360;
+  if (typeof window === 'undefined') {
+    return { x: 100, y: 100 }; // Default position for SSR
+  }
   return {
     x: Math.max(20, (window.innerWidth - windowWidth) / 2),
     y: Math.max(60, (window.innerHeight - windowHeight) / 2),

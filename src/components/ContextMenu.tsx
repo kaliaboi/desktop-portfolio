@@ -1,3 +1,5 @@
+'use client'
+
 import { useRef, useEffect } from "react";
 import { useDesktop } from "../context/DesktopContext";
 import { RefreshCw, RotateCcw, Eye, Info, LucideIcon } from "lucide-react";

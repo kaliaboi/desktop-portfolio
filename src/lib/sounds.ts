@@ -1,7 +1,8 @@
 // Audio context for generating sounds
 let audioContext: AudioContext | null = null;
 
-const getAudioContext = (): AudioContext => {
+const getAudioContext = (): AudioContext | null => {
+  if (typeof window === 'undefined') return null;
   if (!audioContext) {
     audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
   }
@@ -14,6 +15,8 @@ const getAudioContext = (): AudioContext => {
 export const playWindowOpenSound = () => {
   try {
     const ctx = getAudioContext();
+    if (!ctx) return;
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     // Create oscillator for the main tone
@@ -49,6 +52,7 @@ export const playWindowOpenSound = () => {
 export const playWindowCloseSound = () => {
   try {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     // Create oscillator for the main tone
@@ -84,6 +88,7 @@ export const playWindowCloseSound = () => {
 export const playTapSound = () => {
   try {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     // Create oscillator for a short click sound
@@ -118,6 +123,7 @@ export const playTapSound = () => {
 export const playSelectSound = () => {
   try {
     const ctx = getAudioContext();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     // Create oscillator for selection tone
